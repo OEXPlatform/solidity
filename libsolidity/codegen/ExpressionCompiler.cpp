@@ -565,6 +565,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 		case FunctionType::Kind::CallCode:
 		case FunctionType::Kind::DelegateCall:
 		case FunctionType::Kind::BareCall:
+		case FunctionType::Kind::BareCallWithPay:
 		case FunctionType::Kind::BareCallCode:
 		case FunctionType::Kind::BareDelegateCall:
 			_functionCall.expression().accept(*this);
@@ -625,7 +626,7 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			utils().convertType(*arguments.front()->annotation().type, IntegerType(256), true);
 			// Note that function is not the original function, but the ".gas" function.
 			// Its values of gasSet and valueSet is equal to the original function's though.
-			unsigned stackDepth = (function.gasSet() ? 1 : 0) + (function.valueSet() ? 1 : 0);
+			unsigned stackDepth = (function.gasSet() ? 1 : 0) + (function.valueSet() ? 1 : 0) + (function.assetidSet() ? 1 : 0);
 			if (stackDepth > 0)
 				m_context << swapInstruction(stackDepth);
 			if (function.gasSet())
@@ -640,6 +641,282 @@ bool ExpressionCompiler::visit(FunctionCall const& _functionCall)
 			if (function.valueSet())
 				m_context << Instruction::POP;
 			arguments.front()->accept(*this);
+			break;
+		case FunctionType::Kind::SetAssetID:
+			// stack layout: contract_address function_id [gas] [value]
+			_functionCall.expression().accept(*this);
+			// Note that function is not the original function, but the ".value" function.
+			// Its values of gasSet and valueSet is equal to the original function's though.
+			if (function.assetidSet())
+				m_context << Instruction::POP;
+			arguments.front()->accept(*this);
+			break;
+         case FunctionType::Kind::GetEpoch:
+		 {
+			_functionCall.expression().accept(*this);
+
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		        {
+			    arguments[arg]->accept(*this);				
+			    utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+			m_context << Instruction::GETEPOCH;						
+			break;
+		}
+		case FunctionType::Kind::GetCandidateNum:
+		{
+			_functionCall.expression().accept(*this);
+
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		        {
+			    arguments[arg]->accept(*this);				
+			    utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+			m_context << Instruction::GETCANDIDATENUM;						
+			break;
+		}
+		case FunctionType::Kind::GetCandidate:
+		{
+			_functionCall.expression().accept(*this);
+
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		        {
+			    arguments[arg]->accept(*this);				
+			    utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+			m_context << Instruction::GETCANDIDATE;	
+   					
+			break;
+		}
+		case FunctionType::Kind::GetVoterStake:
+		{
+			_functionCall.expression().accept(*this);
+			TypePointers argumentTypes;
+			for (auto const& arg: arguments)
+			{
+				 arg->accept(*this);
+				argumentTypes.push_back(arg->annotation().type);
+				if (arg->annotation().type->category() == Type::Category::Array)
+				{
+					m_context <<Instruction::DUP1<< Instruction::MLOAD;
+					m_context <<Instruction::SWAP1<< u256(0x20) << Instruction::ADD;
+				}
+			}
+			m_context << Instruction::GETVOTERSTAKE;		
+			break;
+		}
+		case FunctionType::Kind::CryptoCalc:
+        {
+            _functionCall.expression().accept(*this);
+            //add function internal arguments
+			TypePointers argumentTypes;
+			for (auto const& arg: arguments)
+			{
+                arg->accept(*this);
+			    argumentTypes.push_back(arg->annotation().type);
+                if (arg->annotation().type->category() == Type::Category::Array)
+		        {
+                    m_context <<Instruction::DUP1<< Instruction::MLOAD;
+				    m_context <<Instruction::SWAP1<< u256(0x20) << Instruction::ADD;
+                }
+            }
+            m_context << Instruction::CRYPTOCALC;
+            //stack:   <arg1> <arg2> ... <datalen>
+            m_context << Instruction::DUP1 << u256(0x1f) << Instruction::ADD;    
+            m_context << u256(0x1f) <<   Instruction::NOT <<  Instruction::AND;  
+            //update the freemomory pointer
+            utils().fetchFreeMemoryPointer();         
+	        m_context << Instruction::ADD;
+            utils().storeFreeMemoryPointer();
+			break;
+        }
+		case FunctionType::Kind::DeductGas:
+			_functionCall.expression().accept(*this);
+
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		        {
+			    arguments[arg]->accept(*this);				
+			    utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+			m_context << Instruction::DEDUCTGAS;				
+			break;
+         case FunctionType::Kind::GetAccountTime:
+			_functionCall.expression().accept(*this);
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+			m_context << Instruction::GETACCOUNTTIME;									
+			break;
+		case FunctionType::Kind::SnapBalance:
+			_functionCall.expression().accept(*this);
+
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		        {
+			    arguments[arg]->accept(*this);				
+			    utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+			m_context << Instruction::SNAPBALANCE;						
+			break;
+		case FunctionType::Kind::AssetInfo:
+			_functionCall.expression().accept(*this);
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+				if (arguments[arg]->annotation().type->category() == Type::Category::Array)
+		        {
+                    m_context <<Instruction::DUP1<< Instruction::MLOAD;
+				    m_context <<Instruction::SWAP1<< u256(0x20) << Instruction::ADD;
+                }
+		  	}
+
+			m_context << Instruction::ASSETINFO;
+			m_context << Instruction::DUP1 << u256(0x1f) << Instruction::ADD;    
+            m_context << u256(0x1f) <<   Instruction::NOT <<  Instruction::AND;  
+            //update the freemomory pointer
+            utils().fetchFreeMemoryPointer();         
+	        m_context << Instruction::ADD;
+            utils().storeFreeMemoryPointer();
+			m_context << Instruction::POP;  
+			break;
+		case FunctionType::Kind::DestroyAsset:
+			_functionCall.expression().accept(*this);
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+
+			m_context << Instruction::DESTROYASSET;
+			
+			break;
+		case FunctionType::Kind::GetDelegate:
+			_functionCall.expression().accept(*this);
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+
+			m_context << Instruction::GETDELEGATE;
+			
+			break;
+		case FunctionType::Kind::GetAccountID:
+		    for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+
+			m_context << Instruction::DUP1 << Instruction::MLOAD << Instruction::SWAP1<< u256(32) << Instruction::ADD;
+			m_context << Instruction::GETACCOUNTID;
+			break;
+		case FunctionType::Kind::GetAssetID:
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+
+			m_context << Instruction::DUP1 << Instruction::MLOAD << Instruction::SWAP1<< u256(32) << Instruction::ADD;
+			m_context << Instruction::GETASSETID;
+			break;
+		case FunctionType::Kind::SnapshotTime:
+			_functionCall.expression().accept(*this);
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+
+			m_context << Instruction::SNAPSHOTTIME;			
+			break;
+		case FunctionType::Kind::SetAssetOwner:
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+
+			m_context << Instruction::SETASSETOWNER;			
+			break;
+		case FunctionType::Kind::AddAsset:
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+			
+			m_context << Instruction::ADDASSET;			
+			break;
+        case FunctionType::Kind::IssueAsset:
+		    for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+
+			m_context << Instruction::DUP1 << Instruction::MLOAD << Instruction::SWAP1<< u256(32) << Instruction::ADD;
+			m_context << Instruction::ISSUEASSET;
+			
+			break;
+        case FunctionType::Kind::BalanceEx: 
+			_functionCall.expression().accept(*this);
+
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		        {
+			    arguments[arg]->accept(*this);				
+			    utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+			m_context << Instruction::BALANCEEX;
+		    break;
+        case FunctionType::Kind::WithdrawFee: 
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+		    {
+			    arguments[arg]->accept(*this);
+				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);
+		  	}
+
+			m_context << Instruction::WITHDRAWFEE;			
+			break;
+		case FunctionType::Kind::SendEx:
+		case FunctionType::Kind::TransferEx:
+			_functionCall.expression().accept(*this);
+		    // Provide the gas stipend manually at first because we may send zero ether.
+			// Will be zeroed if we send more than zero ether.
+			m_context << u256(eth::GasCosts::callStipend);
+			for (unsigned arg = 0; arg < arguments.size(); arg++)
+      		{
+   				arguments[arg]->accept(*this);
+   				utils().convertType(*arguments[arg]->annotation().type, *function.parameterTypes()[arg], true);   
+       		}
+			// gas <- gas * !value
+			m_context << Instruction::SWAP2 << Instruction::DUP3;
+			m_context << Instruction::ISZERO << Instruction::MUL << Instruction::SWAP2 << Instruction::SWAP1;
+			appendExternalFunctionCall(
+				FunctionType(
+					TypePointers{},
+					TypePointers{},
+					strings(),
+					strings(),
+					FunctionType::Kind::TransferEx,
+					false,
+					StateMutability::NonPayable,
+					nullptr,
+					true,
+					true
+				),
+				{}
+			);			
+			if (function.kind() == FunctionType::Kind::TransferEx)
+			{
+				// Check if zero (out of stack or not enough balance).
+				// TODO: bubble up here, but might also be different error.
+				m_context << Instruction::ISZERO;
+				m_context.appendConditionalRevert(true);
+			}
 			break;
 		case FunctionType::Kind::Send:
 		case FunctionType::Kind::Transfer:
@@ -1124,8 +1401,11 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				case FunctionType::Kind::CallCode:
 				case FunctionType::Kind::Send:
 				case FunctionType::Kind::BareCall:
+				case FunctionType::Kind::BareCallWithPay:
 				case FunctionType::Kind::BareCallCode:
 				case FunctionType::Kind::BareDelegateCall:
+				case FunctionType::Kind::SendEx:
+				case FunctionType::Kind::TransferEx:
 				case FunctionType::Kind::Transfer:
 					_memberAccess.expression().accept(*this);
 					m_context << funType->externalIdentifier();
@@ -1237,7 +1517,25 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 				);
 				m_context << Instruction::BALANCE;
 			}
-			else if ((set<string>{"send", "transfer", "call", "callcode", "delegatecall"}).count(member))
+            else if(member == "balanceex")
+            {
+
+			    utils().convertType(
+					*_memberAccess.expression().annotation().type,
+					IntegerType(160, IntegerType::Modifier::Address),
+					true
+				);
+		    }
+			else if(member == "snapbalance")
+            {
+
+			    utils().convertType(
+					*_memberAccess.expression().annotation().type,
+					IntegerType(160, IntegerType::Modifier::Address),
+					true
+				);
+		    }
+			else if ((set<string>{"send", "transfer","sendex","transferex","call", "callwithpay", "callcode", "delegatecall"}).count(member))
 				utils().convertType(
 					*_memberAccess.expression().annotation().type,
 					IntegerType(160, IntegerType::Modifier::Address),
@@ -1275,8 +1573,12 @@ bool ExpressionCompiler::visit(MemberAccess const& _memberAccess)
 			m_context << Instruction::CALLER;
 		else if (member == "value")
 			m_context << Instruction::CALLVALUE;
+		else if (member == "assetid")
+			m_context << Instruction::CALLASSETID;
 		else if (member == "origin")
 			m_context << Instruction::ORIGIN;
+		else if (member == "recipient")
+			m_context << Instruction::RECIPIENT;
 		else if (member == "gas")
 			m_context << Instruction::GAS;
 		else if (member == "gasprice")
@@ -1757,15 +2059,36 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	unsigned contractStackPos = m_context.currentToBaseStackOffset(1 + gasValueSize + selfSize + (_functionType.isBareCall() ? 0 : 1));
 	unsigned gasStackPos = m_context.currentToBaseStackOffset(gasValueSize);
 	unsigned valueStackPos = m_context.currentToBaseStackOffset(1);
-
+	
+	unsigned assetIdStackPos = 0;
+	if (_functionType.kind() == FunctionType::Kind::TransferEx)
+	{
+		gasValueSize = (_functionType.gasSet() ? 1 : 0) + (_functionType.valueSet() ? 1 : 0) + 1;
+		contractStackPos = m_context.currentToBaseStackOffset(1 + gasValueSize + selfSize);
+		gasStackPos = m_context.currentToBaseStackOffset(gasValueSize);
+		valueStackPos = m_context.currentToBaseStackOffset(2);
+		assetIdStackPos = m_context.currentToBaseStackOffset(1);
+	}
+	if (_functionType.kind() == FunctionType::Kind::BareCallWithPay)
+	{
+		gasValueSize = (_functionType.gasSet() ? 1 : 0) + (_functionType.valueSet() ? 1 : 0) + (_functionType.assetidSet() ? 1 : 0);
+		contractStackPos = m_context.currentToBaseStackOffset(1 + gasValueSize + selfSize + (_functionType.isBareCall() ? 0 : 1));
+		gasStackPos = m_context.currentToBaseStackOffset(gasValueSize);
+		valueStackPos = m_context.currentToBaseStackOffset(2);
+		assetIdStackPos = m_context.currentToBaseStackOffset(1);
+	}
 	// move self object to top
 	if (_functionType.bound())
 		utils().moveToStackTop(gasValueSize, _functionType.selfType()->sizeOnStack());
 
 	auto funKind = _functionType.kind();
-	bool returnSuccessCondition = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::BareDelegateCall;
+	bool returnSuccessCondition = funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareCallWithPay || funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::BareDelegateCall
+		||funKind == FunctionType::Kind::TransferEx ||funKind == FunctionType::Kind::SendEx;
 	bool isCallCode = funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::CallCode;
 	bool isDelegateCall = funKind == FunctionType::Kind::BareDelegateCall || funKind == FunctionType::Kind::DelegateCall;
+	//add callex
+	bool isCallex =  funKind == FunctionType::Kind::TransferEx || funKind == FunctionType::Kind::SendEx;
+	bool isCallWithPay = funKind == FunctionType::Kind::BareCallWithPay;
 	bool useStaticCall =
 		_functionType.stateMutability() <= StateMutability::View &&
 		m_context.experimentalFeatureActive(ExperimentalFeature::V050) &&
@@ -1798,7 +2121,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 	TypePointers parameterTypes = _functionType.parameterTypes();
 	bool manualFunctionId = false;
 	if (
-		(funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::BareDelegateCall) &&
+		(funKind == FunctionType::Kind::TransferEx || funKind == FunctionType::Kind::BareCall || funKind == FunctionType::Kind::BareCallWithPay || funKind == FunctionType::Kind::BareCallCode || funKind == FunctionType::Kind::BareDelegateCall) &&
 		!_arguments.empty()
 	)
 	{
@@ -1821,6 +2144,7 @@ void ExpressionCompiler::appendExternalFunctionCall(
 			m_context << swapInstruction(gasValueSize - i);
 		gasStackPos++;
 		valueStackPos++;
+		assetIdStackPos++;
 	}
 	if (_functionType.bound())
 	{
@@ -1916,6 +2240,12 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		m_context << dupInstruction(m_context.baseToCurrentStackOffset(valueStackPos));
 	else
 		m_context << u256(0);
+	//add callex assetid
+	if( isCallex || _functionType.assetidSet() )
+	{
+	    m_context << dupInstruction(m_context.baseToCurrentStackOffset(assetIdStackPos));
+            //contractStackPos;	
+    }
 	m_context << dupInstruction(m_context.baseToCurrentStackOffset(contractStackPos));
 
 	bool existenceChecked = false;
@@ -1951,6 +2281,11 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		m_context << Instruction::CALLCODE;
 	else if (useStaticCall)
 		m_context << Instruction::STATICCALL;
+	else if(isCallex)
+		//add callex
+		m_context << Instruction::CALLEX;
+	else if(isCallWithPay) 
+		m_context << Instruction::CALLWITHPAY;
 	else
 		m_context << Instruction::CALL;
 
@@ -1960,6 +2295,10 @@ void ExpressionCompiler::appendExternalFunctionCall(
 		_functionType.gasSet() +
 		(!_functionType.isBareCall() || manualFunctionId);
 
+	if (isCallex || isCallWithPay) 
+	{
+		remainsSize++;
+	}
 	if (returnSuccessCondition)
 		m_context << swapInstruction(remainsSize);
 	else

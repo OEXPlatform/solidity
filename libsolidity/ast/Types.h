@@ -890,11 +890,33 @@ public:
 		CallCode, ///< external call using CALLCODE, i.e. not exchanging the storage
 		DelegateCall, ///< external call using DELEGATECALL, i.e. not exchanging the storage
 		BareCall, ///< CALL without function hash
+		BareCallWithPay, ///< Call with pay
 		BareCallCode, ///< CALLCODE without function hash
 		BareDelegateCall, ///< DELEGATECALL without function hash
 		Creation, ///< external call using CREATE
 		Send, ///< CALL, but without data and gas
 		Transfer, ///< CALL, but without data and throws on error
+		SetAssetOwner, ///< set owner for asset
+		AddAsset, ///<  add new asset 10
+		IssueAsset, ///< issue asset 11
+		BalanceEx, ///< multi-asset balance
+		SnapBalance, ///< asset snapshot balance
+		AssetInfo, ///< get asset amount
+		SnapshotTime, ///< get snapshot time
+		DestroyAsset, ///< destroy asset
+		GetAccountID, ///< get account id
+		GetAssetID,
+		GetDelegate, ///< get delegate amount
+        GetAccountTime, ///< get account create time
+		DeductGas, ///< deduct gas
+        CryptoCalc, ///< calc ecies
+		WithdrawFee, ///< withdraw fee
+        GetEpoch, ///
+		GetCandidateNum, ///
+		GetCandidate, ///
+		GetVoterStake, ///
+		SendEx, ///< CALL, but without data and gas for muti-asset				
+        TransferEx, ///< CALL, but without data and throws on error for muti-asset
 		SHA3, ///< SHA3
 		Selfdestruct, ///< SELFDESTRUCT
 		Revert, ///< REVERT
@@ -909,6 +931,7 @@ public:
 		Event, ///< syntactic sugar for LOG*
 		SetGas, ///< modify the default gas value for the function call
 		SetValue, ///< modify the default value transfer for the function call
+		SetAssetID, ///< modify the default assetid transfer for the function call
 		BlockHash, ///< BLOCKHASH
 		AddMod, ///< ADDMOD
 		MulMod, ///< MULMOD
@@ -968,7 +991,8 @@ public:
 		Declaration const* _declaration = nullptr,
 		bool _gasSet = false,
 		bool _valueSet = false,
-		bool _bound = false
+		bool _bound = false,
+		bool _assetidSet = false
 	):
 		m_parameterTypes(_parameterTypes),
 		m_returnParameterTypes(_returnParameterTypes),
@@ -980,6 +1004,7 @@ public:
 		m_gasSet(_gasSet),
 		m_valueSet(_valueSet),
 		m_bound(_bound),
+		m_assetidSet(_assetidSet),
 		m_declaration(_declaration)
 	{
 		solAssert(
@@ -1076,11 +1101,13 @@ public:
 
 	bool gasSet() const { return m_gasSet; }
 	bool valueSet() const { return m_valueSet; }
+	bool assetidSet() const { return m_assetidSet; }
 	bool bound() const { return m_bound; }
 
 	/// @returns a copy of this type, where gas or value are set manually. This will never set one
 	/// of the parameters to false.
 	TypePointer copyAndSetGasOrValue(bool _setGas, bool _setValue) const;
+	TypePointer copyAndSetAssetID(bool _setAssetID) const;
 
 	/// @returns a copy of this function type where all return parameters of dynamic size are
 	/// removed and the location of reference types is changed from CallData to Memory.
@@ -1105,6 +1132,7 @@ private:
 	bool const m_gasSet = false; ///< true iff the gas value to be used is on the stack
 	bool const m_valueSet = false; ///< true iff the value to be sent is on the stack
 	bool const m_bound = false; ///< true iff the function is called as arg1.fun(arg2, ..., argn)
+	bool const m_assetidSet = false; ///< true if the assetid to be sent is on the stack
 	Declaration const* m_declaration = nullptr;
 };
 

@@ -585,11 +585,16 @@ MemberList::MemberMap IntegerType::nativeMembers(ContractDefinition const*) cons
 	if (isAddress())
 		return {
 			{"balance", make_shared<IntegerType>(256)},
+            {"balanceex", make_shared<FunctionType>(strings{"uint"}, strings{"uint"}, FunctionType::Kind::BalanceEx)},
+            {"snapbalance", make_shared<FunctionType>(strings{"uint","uint","uint"}, strings{"uint"}, FunctionType::Kind::SnapBalance)},
 			{"call", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCall, true, StateMutability::Payable)},
+			{"callwithpay", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCallWithPay, true, StateMutability::Payable)},
 			{"callcode", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareCallCode, true, StateMutability::Payable)},
 			{"delegatecall", make_shared<FunctionType>(strings(), strings{"bool"}, FunctionType::Kind::BareDelegateCall, true)},
 			{"send", make_shared<FunctionType>(strings{"uint"}, strings{"bool"}, FunctionType::Kind::Send)},
-			{"transfer", make_shared<FunctionType>(strings{"uint"}, strings(), FunctionType::Kind::Transfer)}
+			//{"transfer", make_shared<FunctionType>(strings{"uint"}, strings(), FunctionType::Kind::Transfer)},
+			{"sendex", make_shared<FunctionType>(strings{"address","uint"}, strings{"bool"}, FunctionType::Kind::SendEx)},
+			{"transfer", make_shared<FunctionType>(strings{"uint","uint"}, strings(), FunctionType::Kind::TransferEx)},
 		};
 	else
 		return MemberList::MemberMap();
@@ -2471,11 +2476,21 @@ string FunctionType::richIdentifier() const
 	case Kind::CallCode: id += "callcode"; break;
 	case Kind::DelegateCall: id += "delegatecall"; break;
 	case Kind::BareCall: id += "barecall"; break;
+	case Kind::BareCallWithPay: id += "barecallwithpay"; break;
 	case Kind::BareCallCode: id += "barecallcode"; break;
 	case Kind::BareDelegateCall: id += "baredelegatecall"; break;
 	case Kind::Creation: id += "creation"; break;
 	case Kind::Send: id += "send"; break;
 	case Kind::Transfer: id += "transfer"; break;
+	case Kind::SendEx: id += "sendex"; break;
+	case Kind::TransferEx: id += "transferex"; break;
+    case Kind::AddAsset: id += "addasset"; break;
+    case Kind::IssueAsset: id += "issueasset"; break;
+	case Kind::SetAssetOwner: id += "setassetowner"; break;
+    case Kind::BalanceEx: id += "balanceex"; break;
+	case Kind::WithdrawFee: id += "withdrawfee"; break;
+    case Kind::AssetInfo: id += "assetinfo"; break;
+	case Kind::SnapBalance: id += "snapbalance"; break;
 	case Kind::SHA3: id += "sha3"; break;
 	case Kind::Selfdestruct: id += "selfdestruct"; break;
 	case Kind::Revert: id += "revert"; break;
@@ -2491,6 +2506,7 @@ string FunctionType::richIdentifier() const
 	case Kind::Event: id += "event"; break;
 	case Kind::SetGas: id += "setgas"; break;
 	case Kind::SetValue: id += "setvalue"; break;
+	case Kind::SetAssetID: id += "setassetid"; break;
 	case Kind::BlockHash: id += "blockhash"; break;
 	case Kind::AddMod: id += "addmod"; break;
 	case Kind::MulMod: id += "mulmod"; break;
@@ -2629,7 +2645,7 @@ unsigned FunctionType::storageBytes() const
 unsigned FunctionType::sizeOnStack() const
 {
 	Kind kind = m_kind;
-	if (m_kind == Kind::SetGas || m_kind == Kind::SetValue)
+	if (m_kind == Kind::SetGas || m_kind == Kind::SetValue || m_kind == Kind::SetAssetID)
 	{
 		solAssert(m_returnParameterTypes.size() == 1, "");
 		kind = dynamic_cast<FunctionType const&>(*m_returnParameterTypes.front()).m_kind;
@@ -2645,6 +2661,7 @@ unsigned FunctionType::sizeOnStack() const
 		size = 2;
 		break;
 	case Kind::BareCall:
+	case Kind::BareCallWithPay:
 	case Kind::BareCallCode:
 	case Kind::BareDelegateCall:
 	case Kind::Internal:
@@ -2659,6 +2676,8 @@ unsigned FunctionType::sizeOnStack() const
 	if (m_gasSet)
 		size++;
 	if (m_valueSet)
+		size++;
+	if (m_assetidSet)
 		size++;
 	if (bound())
 		size += m_parameterTypes.front()->sizeOnStack();
@@ -2712,6 +2731,7 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 	case Kind::Creation:
 	case Kind::BareCall:
 	case Kind::BareCallCode:
+	case Kind::BareCallWithPay:
 	case Kind::BareDelegateCall:
 	{
 		MemberList::MemberMap members;
@@ -2755,6 +2775,27 @@ MemberList::MemberMap FunctionType::nativeMembers(ContractDefinition const*) con
 					m_valueSet
 				)
 			));
+		if (m_kind == Kind::BareCallWithPay)
+		{
+			if (isPayable())
+				members.push_back(MemberList::Member(
+					"assetid",
+					make_shared<FunctionType>(
+						parseElementaryTypeVector({"uint"}),
+						TypePointers{copyAndSetAssetID(true)},
+						strings(),
+						strings(),
+						Kind::SetAssetID,
+						false,
+						StateMutability::NonPayable,
+						nullptr,
+						m_gasSet,
+						m_valueSet,
+						false,
+						m_assetidSet
+					)
+				));
+		}
 		return members;
 	}
 	default:
@@ -2818,6 +2859,8 @@ bool FunctionType::isBareCall() const
 	switch (m_kind)
 	{
 	case Kind::BareCall:
+	case Kind::BareCallWithPay:
+	case Kind::TransferEx:
 	case Kind::BareCallCode:
 	case Kind::BareDelegateCall:
 	case Kind::ECRecover:
@@ -2894,7 +2937,26 @@ TypePointer FunctionType::copyAndSetGasOrValue(bool _setGas, bool _setValue) con
 		m_declaration,
 		m_gasSet || _setGas,
 		m_valueSet || _setValue,
-		m_bound
+		m_bound,
+		m_assetidSet
+	);
+}
+
+TypePointer FunctionType::copyAndSetAssetID(bool _setAssetID) const
+{
+	return make_shared<FunctionType>(
+		m_parameterTypes,
+		m_returnParameterTypes,
+		m_parameterNames,
+		m_returnParameterNames,
+		m_kind,
+		m_arbitraryParameters,
+		m_stateMutability,
+		m_declaration,
+		m_gasSet,
+		m_valueSet,
+		m_bound,
+		m_assetidSet || _setAssetID
 	);
 }
 
@@ -3161,12 +3223,14 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const*) const
 			{"sender", make_shared<IntegerType>(160, IntegerType::Modifier::Address)},
 			{"gas", make_shared<IntegerType>(256)},
 			{"value", make_shared<IntegerType>(256)},
+			{"assetid", make_shared<IntegerType>(256)},
 			{"data", make_shared<ArrayType>(DataLocation::CallData)},
 			{"sig", make_shared<FixedBytesType>(4)}
 		});
 	case Kind::Transaction:
 		return MemberList::MemberMap({
 			{"origin", make_shared<IntegerType>(160, IntegerType::Modifier::Address)},
+			{"recipient", make_shared<IntegerType>(160, IntegerType::Modifier::Address)},
 			{"gasprice", make_shared<IntegerType>(256)}
 		});
 	case Kind::ABI:

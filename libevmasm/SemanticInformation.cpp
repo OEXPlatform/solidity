@@ -227,8 +227,10 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::ADDRESS:
 	case Instruction::BALANCE:
 	case Instruction::ORIGIN:
+	case Instruction::RECIPIENT:
 	case Instruction::CALLER:
 	case Instruction::CALLVALUE:
+	case Instruction::CALLASSETID:
 	case Instruction::GAS:
 	case Instruction::GASPRICE:
 	case Instruction::EXTCODESIZE:

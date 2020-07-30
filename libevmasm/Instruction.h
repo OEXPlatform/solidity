@@ -89,6 +89,7 @@ enum class Instruction: uint8_t
 	NUMBER,				///< get the block's number
 	DIFFICULTY,			///< get the block's difficulty
 	GASLIMIT,			///< get the block's gas limit
+	CALLASSETID,        ///< get deposited assetid by the instruction/transaction responsible for this execution
 
 	POP = 0x50,			///< remove item from stack
 	MLOAD,				///< load word from memory
@@ -187,6 +188,28 @@ enum class Instruction: uint8_t
 	PUTLOCAL,           ///< pop top of stack to local variable -- not part of Instructions.cpp
 	GETLOCAL,           ///< push local variable to top of stack -- not part of Instructions.cpp
 
+    ISSUEASSET = 0xc0,	///< ISSUE Asset
+    ADDASSET = 0xc1,    ///< Add a new asset
+    SETASSETOWNER = 0xc2, ///< set asset owner
+    BALANCEEX = 0xc3,   ///< extend to support muti-asset balance 
+    CALLEX = 0xc4,      ///< extend to support muti-asset transaction
+    ASSETINFO = 0xc5, ///< get asset amount
+	SNAPSHOTTIME= 0xc6, ///< get snapshot time
+	SNAPBALANCE = 0xc7, ///< get snapshot time balance
+	DESTROYASSET = 0xc8, ///< destroy asset	
+	GETACCOUNTID = 0xc9, ///< get account id
+	GETDELEGATE = 0xca, ///< get delegate amount
+    GETACCOUNTTIME = 0xcb, ///< get account create time
+	CRYPTOCALC = 0xcc, ///< ecies calc
+	DEDUCTGAS = 0xcd, ///< deduct gas
+    WITHDRAWFEE = 0xce, ///< withdraw fee
+	GETASSETID = 0xcf, ///< getassetid
+    GETEPOCH = 0xd0, ///< 
+	GETCANDIDATENUM        = 0xd1, ///<
+	GETCANDIDATE           = 0xd2, ///<
+	GETVOTERSTAKE          = 0xd3, ///<
+	RECIPIENT = 0xd4, ///< origin Recipient
+	CALLWITHPAY = 0xd5, ///< call with pay
 	CREATE = 0xf0,		///< create a new account with associated code
 	CALL,				///< message-call into an account
 	CALLCODE,			///< message-call with another account's code only

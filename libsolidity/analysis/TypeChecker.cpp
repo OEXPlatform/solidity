@@ -1320,6 +1320,7 @@ void TypeChecker::endVisit(ExpressionStatement const& _statement)
 			auto kind = callType->kind();
 			if (
 				kind == FunctionType::Kind::BareCall ||
+				kind == FunctionType::Kind::BareCallWithPay || 
 				kind == FunctionType::Kind::BareCallCode ||
 				kind == FunctionType::Kind::BareDelegateCall
 			)
@@ -2127,7 +2128,7 @@ bool TypeChecker::visit(MemberAccess const& _memberAccess)
 			solAssert(!!contractType, "Should be contract type.");
 
 			if (
-				(kind == FunctionType::Kind::Send || kind == FunctionType::Kind::Transfer) &&
+				(kind == FunctionType::Kind::Send || kind == FunctionType::Kind::SendEx ||  kind == FunctionType::Kind::Transfer || kind == FunctionType::Kind::TransferEx) &&
 				!contractType->isPayable()
 			)
 				m_errorReporter.typeError(

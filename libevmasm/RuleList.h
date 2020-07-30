@@ -178,6 +178,7 @@ std::vector<SimplificationRule<Pattern>> simplificationRuleList(
 		Instruction::ADDRESS,
 		Instruction::CALLER,
 		Instruction::ORIGIN,
+		Instruction::RECIPIENT,
 		Instruction::COINBASE
 	})
 	{
