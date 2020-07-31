@@ -28,7 +28,7 @@ using namespace std;
 using namespace dev;
 using namespace dev::eth;
 
-bool SemanticInformation::breaksCSEAnalysisBlock(AssemblyItem const& _item, bool _msizeImportant)
+bool SemanticInformation::breaksCSEAnalysisBlock(AssemblyItem const &_item, bool _msizeImportant)
 {
 	switch (_item.type())
 	{
@@ -59,10 +59,8 @@ bool SemanticInformation::breaksCSEAnalysisBlock(AssemblyItem const& _item, bool
 			return false;
 		if (_item.instruction() == Instruction::MSTORE)
 			return false;
-		if (!_msizeImportant && (
-			_item.instruction() == Instruction::MLOAD ||
-			_item.instruction() == Instruction::KECCAK256
-		))
+		if (!_msizeImportant && (_item.instruction() == Instruction::MLOAD ||
+								 _item.instruction() == Instruction::KECCAK256))
 			return false;
 		//@todo: We do not handle the following memory instructions for now:
 		// calldatacopy, codecopy, extcodecopy, mstore8,
@@ -74,7 +72,7 @@ bool SemanticInformation::breaksCSEAnalysisBlock(AssemblyItem const& _item, bool
 	}
 }
 
-bool SemanticInformation::isCommutativeOperation(AssemblyItem const& _item)
+bool SemanticInformation::isCommutativeOperation(AssemblyItem const &_item)
 {
 	if (_item.type() != Operation)
 		return false;
@@ -92,26 +90,26 @@ bool SemanticInformation::isCommutativeOperation(AssemblyItem const& _item)
 	}
 }
 
-bool SemanticInformation::isDupInstruction(AssemblyItem const& _item)
+bool SemanticInformation::isDupInstruction(AssemblyItem const &_item)
 {
 	if (_item.type() != Operation)
 		return false;
 	return solidity::isDupInstruction(_item.instruction());
 }
 
-bool SemanticInformation::isSwapInstruction(AssemblyItem const& _item)
+bool SemanticInformation::isSwapInstruction(AssemblyItem const &_item)
 {
 	if (_item.type() != Operation)
 		return false;
 	return solidity::isSwapInstruction(_item.instruction());
 }
 
-bool SemanticInformation::isJumpInstruction(AssemblyItem const& _item)
+bool SemanticInformation::isJumpInstruction(AssemblyItem const &_item)
 {
 	return _item == AssemblyItem(Instruction::JUMP) || _item == AssemblyItem(Instruction::JUMPI);
 }
 
-bool SemanticInformation::altersControlFlow(AssemblyItem const& _item)
+bool SemanticInformation::altersControlFlow(AssemblyItem const &_item)
 {
 	if (_item.type() != Operation)
 		return false;
@@ -132,8 +130,7 @@ bool SemanticInformation::altersControlFlow(AssemblyItem const& _item)
 	}
 }
 
-
-bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
+bool SemanticInformation::isDeterministic(AssemblyItem const &_item)
 {
 	if (_item.type() != Operation)
 		return true;
@@ -148,7 +145,7 @@ bool SemanticInformation::isDeterministic(AssemblyItem const& _item)
 	case Instruction::CREATE2:
 	case Instruction::GAS:
 	case Instruction::PC:
-	case Instruction::MSIZE: // depends on previous writes and reads, not only on content
+	case Instruction::MSIZE:   // depends on previous writes and reads, not only on content
 	case Instruction::BALANCE: // depends on previous calls
 	case Instruction::EXTCODESIZE:
 	case Instruction::RETURNDATACOPY: // depends on previous calls
@@ -231,6 +228,8 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::CALLER:
 	case Instruction::CALLVALUE:
 	case Instruction::CALLASSETID:
+	case Instruction::EXTASSETID1:
+	case Instruction::EXTVALUE1:
 	case Instruction::GAS:
 	case Instruction::GASPRICE:
 	case Instruction::EXTCODESIZE:
