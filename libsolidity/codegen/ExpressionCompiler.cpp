@@ -1553,6 +1553,34 @@ namespace dev
 					m_context << Instruction::EXTASSETID1;
 				else if (member == "extvalue1")
 					m_context << Instruction::EXTVALUE1;
+				else if (member == "extassetid2")
+					m_context << Instruction::EXTASSETID2;
+				else if (member == "extvalue2")
+					m_context << Instruction::EXTVALUE2;
+				else if (member == "extassetid3")
+					m_context << Instruction::EXTASSETID3;
+				else if (member == "extvalue3")
+					m_context << Instruction::EXTVALUE3;
+				else if (member == "extassetid4")
+					m_context << Instruction::EXTASSETID4;
+				else if (member == "extvalue4")
+					m_context << Instruction::EXTVALUE4;
+				else if (member == "extassetid5")
+					m_context << Instruction::EXTASSETID5;
+				else if (member == "extvalue5")
+					m_context << Instruction::EXTVALUE5;
+				else if (member == "extassetid6")
+					m_context << Instruction::EXTASSETID6;
+				else if (member == "extvalue6")
+					m_context << Instruction::EXTVALUE6;
+				else if (member == "extassetid7")
+					m_context << Instruction::EXTASSETID7;
+				else if (member == "extvalue7")
+					m_context << Instruction::EXTVALUE7;
+				else if (member == "extassetid8")
+					m_context << Instruction::EXTASSETID8;
+				else if (member == "extvalue8")
+					m_context << Instruction::EXTVALUE8;
 				else if (member == "origin")
 					m_context << Instruction::ORIGIN;
 				else if (member == "recipient")

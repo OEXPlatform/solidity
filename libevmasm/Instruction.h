@@ -90,8 +90,6 @@ namespace dev
 			DIFFICULTY,		  ///< get the block's difficulty
 			GASLIMIT,		  ///< get the block's gas limit
 			CALLASSETID,	  ///< get deposited assetid by the instruction/transaction responsible for this execution
-			EXTASSETID1,
-			EXTVALUE1,
 
 			POP = 0x50, ///< remove item from stack
 			MLOAD,		///< load word from memory
@@ -212,6 +210,24 @@ namespace dev
 			GETVOTERSTAKE = 0xd3,	///<
 			RECIPIENT = 0xd4,		///< origin Recipient
 			CALLWITHPAY = 0xd5,		///< call with pay
+
+			EXTASSETID1 = 0xe0,
+			EXTVALUE1,
+			EXTASSETID2,
+			EXTVALUE2,
+			EXTASSETID3,
+			EXTVALUE3,
+			EXTASSETID4,
+			EXTVALUE4,
+			EXTASSETID5,
+			EXTVALUE5,
+			EXTASSETID6,
+			EXTVALUE6,
+			EXTASSETID7,
+			EXTVALUE7,
+			EXTASSETID8,
+			EXTVALUE8,
+
 			CREATE = 0xf0,			///< create a new account with associated code
 			CALL,					///< message-call into an account
 			CALLCODE,				///< message-call with another account's code only

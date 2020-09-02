@@ -230,6 +230,20 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::CALLASSETID:
 	case Instruction::EXTASSETID1:
 	case Instruction::EXTVALUE1:
+	case Instruction::EXTASSETID2:
+	case Instruction::EXTVALUE2:
+	case Instruction::EXTASSETID3:
+	case Instruction::EXTVALUE3:
+	case Instruction::EXTASSETID4:
+	case Instruction::EXTVALUE4:
+	case Instruction::EXTASSETID5:
+	case Instruction::EXTVALUE5:
+	case Instruction::EXTASSETID6:
+	case Instruction::EXTVALUE6:
+	case Instruction::EXTASSETID7:
+	case Instruction::EXTVALUE7:
+	case Instruction::EXTASSETID8:
+	case Instruction::EXTVALUE8:
 	case Instruction::GAS:
 	case Instruction::GASPRICE:
 	case Instruction::EXTCODESIZE:
