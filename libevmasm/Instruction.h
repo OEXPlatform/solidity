@@ -210,6 +210,7 @@ namespace dev
 			GETVOTERSTAKE = 0xd3,	///<
 			RECIPIENT = 0xd4,		///< origin Recipient
 			CALLWITHPAY = 0xd5,		///< call with pay
+			EXTCOUNT,
 
 			EXTASSETID1 = 0xe0,
 			EXTVALUE1,

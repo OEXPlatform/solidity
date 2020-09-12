@@ -228,6 +228,7 @@ bool SemanticInformation::invalidInPureFunctions(Instruction _instruction)
 	case Instruction::CALLER:
 	case Instruction::CALLVALUE:
 	case Instruction::CALLASSETID:
+	case Instruction::EXTCOUNT:
 	case Instruction::EXTASSETID1:
 	case Instruction::EXTVALUE1:
 	case Instruction::EXTASSETID2:

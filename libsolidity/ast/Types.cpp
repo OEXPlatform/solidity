@@ -3251,6 +3251,7 @@ MemberList::MemberMap MagicType::nativeMembers(ContractDefinition const *) const
 									  {"gas", make_shared<IntegerType>(256)},
 									  {"value", make_shared<IntegerType>(256)},
 									  {"assetid", make_shared<IntegerType>(256)},
+									  {"extcount", make_shared<IntegerType>(256)},
 									  {"extassetid1", make_shared<IntegerType>(256)},
 									  {"extvalue1", make_shared<IntegerType>(256)},
 									  {"extassetid2", make_shared<IntegerType>(256)},

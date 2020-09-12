@@ -1549,6 +1549,8 @@ namespace dev
 					m_context << Instruction::CALLVALUE;
 				else if (member == "assetid")
 					m_context << Instruction::CALLASSETID;
+				else if (member == "extcount")
+					m_context << Instruction::EXTCOUNT;
 				else if (member == "extassetid1")
 					m_context << Instruction::EXTASSETID1;
 				else if (member == "extvalue1")
